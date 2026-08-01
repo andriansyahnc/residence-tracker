@@ -10,8 +10,8 @@ set -euo pipefail
 #   archive-browser-screenshot.sh rfc-auth-sign-in.png rfc/auth-sign-in.png
 
 SRC_DIR="${TMPDIR:-/tmp}/cursor/screenshots"
-WORKSHOP_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
-DEST_ROOT="$WORKSHOP_DIR/snapshots"
+APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+DEST_ROOT="$APP_DIR/snapshots"
 
 temp_name="${1:-}"
 dest_rel="${2:-}"

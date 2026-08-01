@@ -2,6 +2,15 @@
 
 Mobile-first problem tracker for a single residence. Built with TanStack Start, Drizzle ORM, and SQLite (Postgres-ready path via RFC).
 
+## Docs
+
+| Doc | Path |
+|-----|------|
+| PRD | [`docs/prd/residence-problem-tracker.md`](docs/prd/residence-problem-tracker.md) |
+| RFCs | [`docs/rfc/`](docs/rfc/) |
+| ADRs | [`docs/adr/`](docs/adr/) |
+| UI snapshots index | [`docs/ui-snapshots.md`](docs/ui-snapshots.md) |
+
 ## Quick start (local)
 
 ```bash
@@ -62,7 +71,7 @@ Production preview inside the container uses `pnpm start` (Vite preview on port 
 | ORM | **Drizzle** (not Prisma) |
 | DB (MVP) | SQLite via better-sqlite3 |
 | Auth (MVP) | Cookie session + seeded email login |
-| Target (RFC) | Supabase Postgres + magic link |
+| Target (RFC) | Netlify Database (Postgres) + magic link |
 
 ## MVP scope
 
