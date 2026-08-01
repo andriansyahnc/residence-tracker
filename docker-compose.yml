@@ -1,0 +1,17 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: /app/data/residence-tracker.sqlite
+      SESSION_SECRET: ${SESSION_SECRET:-dev-residence-tracker-secret-32chars-min}
+    volumes:
+      - residence-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  residence-data:

@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output (Vite / TanStack Start)
+dist/
+.vinxi/
+.output/
+build/
+
+# Vite & Vitest cache
+.vite/
+vitest.config.ts.timestamp-*
+
+# Test coverage
+coverage/
+
+# Environment — never commit secrets; keep the template
+.env
+.env.*
+!.env.example
+
+# Local SQLite database (Drizzle runtime data)
+data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor — share team settings, ignore personal IDE state
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+*.swp
+*.swo
+*~
+
+# Cursor / local agent context
+.cursor/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Optional deploy artifacts
+.vercel/
+.netlify/
