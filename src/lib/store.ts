@@ -1,5 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm'
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import { and, desc, eq } from 'drizzle-orm'
 import type {
   AuthLookup,
   Comment,
@@ -12,6 +11,7 @@ import { canCommentOnProblem, canViewProblem } from '../domain/permissions'
 import { canTransitionStatus } from '../domain/status'
 import { validateComment, validateProblemInput } from '../domain/validation'
 import type { ProblemInput } from '../domain/validation'
+import type { AppDatabase } from '../db'
 import { createTestDb, getDb } from '../db'
 import * as schema from '../db/schema'
 import { comments, memberships, problems, profiles, residences } from '../db/schema'
@@ -21,7 +21,7 @@ export type ProblemDetail = Problem & {
   reporterName: string
 }
 
-type Db = BetterSQLite3Database<typeof schema>
+type Db = AppDatabase
 
 function membershipFor(user: SessionUser) {
   return {
@@ -66,54 +66,53 @@ function mapComment(row: typeof comments.$inferSelect): Comment {
   }
 }
 
-export function createStore(db: Db = getDb()) {
-  function profileName(userId: string) {
-    const profile = db
+export function createStore(db: Db) {
+  async function profileName(userId: string) {
+    const [profile] = await db
       .select()
       .from(profiles)
       .where(eq(profiles.id, userId))
-      .get()
+      .limit(1)
     return profile?.displayName ?? 'Unknown user'
   }
 
-  function getProblemRecord(problemId: string) {
-    const row = db
+  async function getProblemRecord(problemId: string) {
+    const [row] = await db
       .select()
       .from(problems)
       .where(eq(problems.id, problemId))
-      .get()
+      .limit(1)
     return row ? mapProblem(row) : null
   }
 
-  function toDetail(user: SessionUser, problem: Problem): ProblemDetail {
-    const rows = db
+  async function toDetail(user: SessionUser, problem: Problem): Promise<ProblemDetail> {
+    const rows = await db
       .select()
       .from(comments)
       .where(eq(comments.problemId, problem.id))
       .orderBy(comments.createdAt)
-      .all()
 
     return {
       ...problem,
-      reporterName: profileName(problem.reporterUserId),
+      reporterName: await profileName(problem.reporterUserId),
       comments: rows.map(mapComment),
     }
   }
 
   return {
-    findAuthUserByEmail(email: string): AuthLookup | null {
-      const profile = db
+    async findAuthUserByEmail(email: string): Promise<AuthLookup | null> {
+      const [profile] = await db
         .select()
         .from(profiles)
         .where(eq(profiles.email, email.toLowerCase()))
-        .get()
+        .limit(1)
       if (!profile) return null
 
-      const membership = db
+      const [membership] = await db
         .select()
         .from(memberships)
         .where(eq(memberships.userId, profile.id))
-        .get()
+        .limit(1)
       if (!membership) {
         return {
           kind: 'no-membership',
@@ -123,11 +122,11 @@ export function createStore(db: Db = getDb()) {
         }
       }
 
-      const residence = db
+      const [residence] = await db
         .select()
         .from(residences)
         .where(eq(residences.id, membership.residenceId))
-        .get()
+        .limit(1)
       if (!residence) return null
 
       return {
@@ -143,12 +142,15 @@ export function createStore(db: Db = getDb()) {
       }
     },
 
-    findUserByEmail(email: string): SessionUser | null {
-      const auth = this.findAuthUserByEmail(email)
+    async findUserByEmail(email: string): Promise<SessionUser | null> {
+      const auth = await this.findAuthUserByEmail(email)
       return auth?.kind === 'member' ? auth.user : null
     },
 
-    listProblems(user: SessionUser, statusFilter?: ProblemStatus): Problem[] {
+    async listProblems(
+      user: SessionUser,
+      statusFilter?: ProblemStatus,
+    ): Promise<Problem[]> {
       const filters = [eq(problems.residenceId, user.residenceId)]
       if (user.role === 'resident') {
         filters.push(eq(problems.reporterUserId, user.userId))
@@ -157,23 +159,26 @@ export function createStore(db: Db = getDb()) {
         filters.push(eq(problems.status, statusFilter))
       }
 
-      return db
+      const rows = await db
         .select()
         .from(problems)
         .where(and(...filters))
-        .orderBy(desc(problems.createdAt), desc(sql`rowid`))
-        .all()
-        .map(mapProblem)
+        .orderBy(desc(problems.createdAt), desc(problems.id))
+
+      return rows.map(mapProblem)
     },
 
-    getProblem(user: SessionUser, problemId: string): ProblemDetail | null {
-      const problem = getProblemRecord(problemId)
+    async getProblem(
+      user: SessionUser,
+      problemId: string,
+    ): Promise<ProblemDetail | null> {
+      const problem = await getProblemRecord(problemId)
       if (!problem) return null
       if (!canViewProblem(membershipFor(user), problem)) return null
       return toDetail(user, problem)
     },
 
-    createProblem(user: SessionUser, input: ProblemInput): Problem {
+    async createProblem(user: SessionUser, input: ProblemInput): Promise<Problem> {
       const validated = validateProblemInput(input)
       if (!validated.ok) {
         throw new Error(validated.error)
@@ -194,22 +199,22 @@ export function createStore(db: Db = getDb()) {
         statusChangedAt: timestamp,
       }
 
-      db.insert(problems).values(row).run()
+      await db.insert(problems).values(row)
       return mapProblem(row)
     },
 
-    updateProblemStatus(
+    async updateProblemStatus(
       user: SessionUser,
       problemId: string,
       nextStatus: ProblemStatus,
       expectedStatus: ProblemStatus,
       comment?: string,
-    ): Problem {
+    ): Promise<Problem> {
       if (user.role !== 'manager') {
         throw new Error('Forbidden')
       }
 
-      const problem = getProblemRecord(problemId)
+      const problem = await getProblemRecord(problemId)
       if (!problem) {
         throw new Error('Not found')
       }
@@ -227,38 +232,40 @@ export function createStore(db: Db = getDb()) {
       }
 
       const timestamp = nowIso()
-      db.update(problems)
+      await db
+        .update(problems)
         .set({
           status: nextStatus,
           updatedAt: timestamp,
           statusChangedAt: timestamp,
         })
         .where(eq(problems.id, problemId))
-        .run()
 
       if (nextStatus === 'rejected' && comment?.trim()) {
-        db.insert(comments)
-          .values({
-            id: id('comment'),
-            problemId: problem.id,
-            residenceId: problem.residenceId,
-            authorUserId: user.userId,
-            body: comment.trim(),
-            createdAt: timestamp,
-          })
-          .run()
+        await db.insert(comments).values({
+          id: id('comment'),
+          problemId: problem.id,
+          residenceId: problem.residenceId,
+          authorUserId: user.userId,
+          body: comment.trim(),
+          createdAt: timestamp,
+        })
       }
 
-      return getProblemRecord(problemId)!
+      return (await getProblemRecord(problemId))!
     },
 
-    addComment(user: SessionUser, problemId: string, body: string): Comment {
+    async addComment(
+      user: SessionUser,
+      problemId: string,
+      body: string,
+    ): Promise<Comment> {
       const validated = validateComment(body)
       if (!validated.ok) {
         throw new Error(validated.error)
       }
 
-      const problem = getProblemRecord(problemId)
+      const problem = await getProblemRecord(problemId)
       if (!problem) {
         throw new Error('Not found')
       }
@@ -275,23 +282,30 @@ export function createStore(db: Db = getDb()) {
         body: validated.value,
         createdAt: timestamp,
       }
-      db.insert(comments).values(row).run()
-      db.update(problems)
+      await db.insert(comments).values(row)
+      await db
+        .update(problems)
         .set({ updatedAt: timestamp })
         .where(eq(problems.id, problemId))
-        .run()
 
       return mapComment(row)
     },
   }
 }
 
-let singleton = createStore()
+let singleton: ReturnType<typeof createStore> | null = null
 
 export function getStore() {
+  if (!singleton) {
+    singleton = createStore(getDb())
+  }
   return singleton
 }
 
-export function resetStore() {
-  singleton = createStore(createTestDb())
+export async function resetStore() {
+  singleton = createStore(await createTestDb())
+}
+
+export async function createTestStore() {
+  return createStore(await createTestDb())
 }

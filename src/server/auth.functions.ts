@@ -19,7 +19,7 @@ export const getAuthState = createServerFn({ method: 'GET' }).handler(
 export const loginWithEmail = createServerFn({ method: 'POST' })
   .validator((data: { email: string }) => data)
   .handler(async ({ data }) => {
-    const auth = getStore().findAuthUserByEmail(data.email.trim())
+    const auth = await getStore().findAuthUserByEmail(data.email.trim())
     if (!auth) {
       return { ok: false as const, error: 'No account found for this email' }
     }

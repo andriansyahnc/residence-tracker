@@ -1,20 +1,24 @@
 import { relations } from 'drizzle-orm'
-import { sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { pgTable, text, uniqueIndex } from 'drizzle-orm/pg-core'
 
-export const residences = sqliteTable('residences', {
+export const residences = pgTable('residences', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   createdAt: text('created_at').notNull(),
 })
 
-export const profiles = sqliteTable('profiles', {
-  id: text('id').primaryKey(),
-  email: text('email').notNull().unique(),
-  displayName: text('display_name').notNull(),
-  createdAt: text('created_at').notNull(),
-})
+export const profiles = pgTable(
+  'profiles',
+  {
+    id: text('id').primaryKey(),
+    email: text('email').notNull(),
+    displayName: text('display_name').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => [uniqueIndex('profiles_email_unique').on(table.email)],
+)
 
-export const memberships = sqliteTable(
+export const memberships = pgTable(
   'memberships',
   {
     id: text('id').primaryKey(),
@@ -35,7 +39,7 @@ export const memberships = sqliteTable(
   ],
 )
 
-export const problems = sqliteTable('problems', {
+export const problems = pgTable('problems', {
   id: text('id').primaryKey(),
   residenceId: text('residence_id')
     .notNull()
@@ -66,7 +70,7 @@ export const problems = sqliteTable('problems', {
   statusChangedAt: text('status_changed_at').notNull(),
 })
 
-export const comments = sqliteTable('comments', {
+export const comments = pgTable('comments', {
   id: text('id').primaryKey(),
   problemId: text('problem_id')
     .notNull()

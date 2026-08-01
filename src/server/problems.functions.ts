@@ -16,7 +16,7 @@ export const getProblem = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const { requireSessionUser } = await import('./auth.server')
     const user = await requireSessionUser()
-    const problem = getStore().getProblem(user, data.problemId)
+    const problem = await getStore().getProblem(user, data.problemId)
     if (!problem) {
       throw new Error('Not found')
     }
@@ -57,6 +57,6 @@ export const addComment = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { requireSessionUser } = await import('./auth.server')
     const user = await requireSessionUser()
-    getStore().addComment(user, data.problemId, data.body)
+    await getStore().addComment(user, data.problemId, data.body)
     return getStore().getProblem(user, data.problemId)
   })

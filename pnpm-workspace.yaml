@@ -1,7 +1,6 @@
 strictDepBuilds: false
 
 allowBuilds:
-  better-sqlite3: true
   esbuild: true
   lightningcss: true
   netlify-cli: true

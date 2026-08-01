@@ -1,6 +1,6 @@
 import { deleteCookie, useSession } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
-import type { SessionUser } from '../domain/types'
+import type { AuthLookup, SessionUser } from '../domain/types'
 import { getDb } from '../db'
 import { profiles } from '../db/schema'
 import { getStore } from '../lib/store'
@@ -22,16 +22,16 @@ function sessionConfig() {
   }
 }
 
-export async function readSessionAuth(): Promise<import('../domain/types').AuthLookup | null> {
+export async function readSessionAuth(): Promise<AuthLookup | null> {
   const session = await useSession<{ userId: string }>(sessionConfig())
   const userId = session.data.userId
   if (!userId) return null
 
-  const profile = getDb()
+  const [profile] = await getDb()
     .select()
     .from(profiles)
     .where(eq(profiles.id, userId))
-    .get()
+    .limit(1)
   if (!profile) return null
 
   return getStore().findAuthUserByEmail(profile.email)

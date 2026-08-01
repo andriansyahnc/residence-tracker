@@ -2,9 +2,9 @@ import { defineConfig } from 'drizzle-kit'
 
 export default defineConfig({
   schema: './src/db/schema.ts',
-  out: './drizzle',
-  dialect: 'sqlite',
+  out: './netlify/database/migrations',
+  dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? 'data/residence-tracker.sqlite',
+    url: process.env.NETLIFY_DB_URL ?? process.env.DATABASE_URL ?? '',
   },
 })

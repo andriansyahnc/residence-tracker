@@ -24,12 +24,12 @@ const manager: SessionUser = {
 describe('store', () => {
   let store: ReturnType<typeof createStore>
 
-  beforeEach(() => {
-    store = createStore(createTestDb())
+  beforeEach(async () => {
+    store = createStore(await createTestDb())
   })
 
-  it('creates a problem for a resident', () => {
-    const problem = store.createProblem(resident, {
+  it('creates a problem for a resident', async () => {
+    const problem = await store.createProblem(resident, {
       title: 'Broken elevator',
       description: 'Stuck on floor 3',
     })
@@ -37,63 +37,63 @@ describe('store', () => {
     expect(problem.reporterUserId).toBe(resident.userId)
   })
 
-  it('lists only own problems for resident', () => {
-    store.createProblem(resident, {
+  it('lists only own problems for resident', async () => {
+    await store.createProblem(resident, {
       title: 'Noise',
       description: 'Late night party',
     })
-    store.createProblem(manager, {
+    await store.createProblem(manager, {
       title: 'Manager issue',
       description: 'Staff only',
     })
-    const list = store.listProblems(resident)
+    const list = await store.listProblems(resident)
     expect(list).toHaveLength(1)
     expect(list[0].title).toBe('Noise')
   })
 
-  it('lists all problems for manager', () => {
-    store.createProblem(resident, { title: 'A', description: 'a' })
-    store.createProblem(resident, { title: 'B', description: 'b' })
-    expect(store.listProblems(manager)).toHaveLength(2)
+  it('lists all problems for manager', async () => {
+    await store.createProblem(resident, { title: 'A', description: 'a' })
+    await store.createProblem(resident, { title: 'B', description: 'b' })
+    expect(await store.listProblems(manager)).toHaveLength(2)
   })
 
-  it('rejects invalid status transition', () => {
-    const problem = store.createProblem(resident, {
+  it('rejects invalid status transition', async () => {
+    const problem = await store.createProblem(resident, {
       title: 'Leak',
       description: 'Pipe burst',
     })
-    expect(() =>
+    await expect(
       store.updateProblemStatus(manager, problem.id, 'closed', problem.status),
-    ).toThrow(/invalid/i)
+    ).rejects.toThrow(/invalid/i)
   })
 
-  it('requires comment when rejecting', () => {
-    const problem = store.createProblem(resident, {
+  it('requires comment when rejecting', async () => {
+    const problem = await store.createProblem(resident, {
       title: 'Duplicate',
       description: 'Already reported',
     })
-    expect(() =>
+    await expect(
       store.updateProblemStatus(
         manager,
         problem.id,
         'rejected',
         problem.status,
       ),
-    ).toThrow(/comment/i)
+    ).rejects.toThrow(/comment/i)
   })
 
-  it('adds comment to problem', () => {
-    const problem = store.createProblem(resident, {
+  it('adds comment to problem', async () => {
+    const problem = await store.createProblem(resident, {
       title: 'Heat',
       description: 'No heating',
     })
-    const comment = store.addComment(resident, problem.id, 'Still cold')
+    const comment = await store.addComment(resident, problem.id, 'Still cold')
     expect(comment.body).toBe('Still cold')
-    expect(store.getProblem(resident, problem.id)?.comments).toHaveLength(1)
+    expect((await store.getProblem(resident, problem.id))?.comments).toHaveLength(1)
   })
 
-  it('denies resident access to another residents problem', () => {
-    const problem = store.createProblem(resident, {
+  it('denies resident access to another residents problem', async () => {
+    const problem = await store.createProblem(resident, {
       title: 'Private',
       description: 'Mine only',
     })
@@ -102,6 +102,6 @@ describe('store', () => {
       userId: 'user-other',
       email: 'other@example.com',
     }
-    expect(store.getProblem(outsider, problem.id)).toBeNull()
+    expect(await store.getProblem(outsider, problem.id)).toBeNull()
   })
 })

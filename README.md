@@ -1,6 +1,6 @@
 # Residence Problem Tracker MVP
 
-Mobile-first problem tracker for a single residence. Built with TanStack Start, Drizzle ORM, and SQLite (Postgres-ready path via RFC).
+Mobile-first problem tracker for a single residence. Built with TanStack Start, Drizzle ORM, and **Netlify Database** (Postgres).
 
 ## Docs
 
@@ -16,10 +16,10 @@ Mobile-first problem tracker for a single residence. Built with TanStack Start, 
 ```bash
 cd residence-tracker
 pnpm install
-pnpm dev
+pnpm exec netlify dev
 ```
 
-Open http://localhost:3000/login and use demo buttons:
+Open the URL shown (usually http://localhost:8888) and use demo login:
 - **Resident:** `resident@example.com`
 - **Manager:** `manager@example.com`
 
@@ -29,49 +29,45 @@ Open http://localhost:3000/login and use demo buttons:
 pnpm test
 ```
 
-Domain logic (status machine, permissions, validation) and Drizzle-backed store are covered by Vitest.
+Domain logic (status machine, permissions, validation) and Drizzle-backed store are covered by Vitest (in-memory Postgres via PGlite).
 
-## Database (Drizzle)
+## Database (Netlify Database + Drizzle)
 
 - Schema: `src/db/schema.ts`
-- Migrations: `drizzle/`
-- Local SQLite file: `data/residence-tracker.sqlite` (auto-created on first run)
+- Migrations: `netlify/database/migrations/` (applied automatically on Netlify deploy)
+- Local: `netlify dev` sets `NETLIFY_DB_URL` with a local Postgres branch
 
 ```bash
-pnpm db:generate   # after schema changes
-pnpm db:push       # push schema to local db
+pnpm db:generate                      # after schema changes
+pnpm exec netlify database status
+pnpm exec netlify database connect      # interactive SQL client
 ```
 
-## Docker / OrbStack
+Demo users are seeded in migration `0002_seed_demo_data.sql`.
 
-Works with Docker Desktop or [OrbStack](https://orbstack.dev/).
+## Netlify deploy
+
+Site: https://residence-tracker.netlify.app
+
+Required env var: **`SESSION_SECRET`** (min 32 chars) in Site configuration.
 
 ```bash
-cd residence-tracker
-docker compose up --build
+pnpm exec netlify deploy --prod
 ```
 
-App runs at http://localhost:3000. Data persists in the `residence-data` volume.
+## Docker / OrbStack (optional)
 
-Override secrets via `.env`:
-
-```bash
-cp .env.example .env
-# edit SESSION_SECRET (min 32 chars)
-docker compose up --build
-```
-
-Production preview inside the container uses `pnpm start` (Vite preview on port 3000).
+Docker runs the UI shell only — use **`netlify dev`** for full-stack local work with Postgres.
 
 ## Stack
 
 | Layer | Choice |
 |-------|--------|
 | App | TanStack Start + React |
-| ORM | **Drizzle** (not Prisma) |
-| DB (MVP) | SQLite via better-sqlite3 |
+| Hosting | Netlify |
+| ORM | Drizzle |
+| DB | **Netlify Database** (Postgres) |
 | Auth (MVP) | Cookie session + seeded email login |
-| Target (RFC) | Netlify Database (Postgres) + magic link |
 
 ## MVP scope
 
