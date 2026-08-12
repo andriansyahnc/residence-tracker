@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   canCommentOnProblem,
   canCreateProblem,
+  canIplStaff,
+  canManageProblems,
   canManageQueue,
   canViewProblem,
 } from './permissions'
@@ -17,6 +19,12 @@ const managerMembership: Membership = {
   userId: 'user-manager',
   residenceId: 'res-1',
   role: 'manager',
+}
+
+const accountantMembership: Membership = {
+  userId: 'user-accountant',
+  residenceId: 'res-1',
+  role: 'accountant',
 }
 
 const ownProblem: Problem = {
@@ -90,5 +98,32 @@ describe('permissions', () => {
         status: 'closed',
       }),
     ).toBe(true)
+  })
+
+  it('accountant is IPL staff but not problem manager', () => {
+    expect(canIplStaff(accountantMembership)).toBe(true)
+    expect(canManageProblems(accountantMembership)).toBe(false)
+    expect(canManageQueue(accountantMembership)).toBe(false)
+  })
+
+  it('manager is IPL staff and problem manager', () => {
+    expect(canIplStaff(managerMembership)).toBe(true)
+    expect(canManageProblems(managerMembership)).toBe(true)
+  })
+
+  it('resident is not IPL staff', () => {
+    expect(canIplStaff(residentMembership)).toBe(false)
+  })
+
+  it('accountant views and comments on problems like a resident', () => {
+    expect(canViewProblem(accountantMembership, otherResidentProblem)).toBe(
+      false,
+    )
+    expect(
+      canCommentOnProblem(
+        { ...accountantMembership, userId: 'user-resident' },
+        { ...ownProblem, status: 'closed' },
+      ),
+    ).toBe(false)
   })
 })

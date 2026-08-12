@@ -28,7 +28,7 @@ export const memberships = pgTable(
     residenceId: text('residence_id')
       .notNull()
       .references(() => residences.id),
-    role: text('role', { enum: ['resident', 'manager'] }).notNull(),
+    role: text('role', { enum: ['resident', 'manager', 'accountant'] }).notNull(),
     createdAt: text('created_at').notNull(),
   },
   (table) => [
