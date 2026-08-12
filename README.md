@@ -7,7 +7,8 @@ Mobile-first problem tracker for a single residence. Built with TanStack Start, 
 | Doc | Path |
 |-----|------|
 | PRD | [`docs/prd/residence-problem-tracker.md`](docs/prd/residence-problem-tracker.md) |
-| RFCs | [`docs/rfc/`](docs/rfc/) |
+| Master RFC | [`docs/rfc/2026-08-01-residence-problem-tracker.md`](docs/rfc/2026-08-01-residence-problem-tracker.md) |
+| Other RFCs | [`docs/rfc/`](docs/rfc/) |
 | ADRs | [`docs/adr/`](docs/adr/) |
 | UI snapshots index | [`docs/ui-snapshots.md`](docs/ui-snapshots.md) |
 

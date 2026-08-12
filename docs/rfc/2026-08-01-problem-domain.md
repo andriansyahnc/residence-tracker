@@ -1,3 +1,5 @@
+> **Superseded as source of truth** by [`2026-08-01-residence-problem-tracker.md`](2026-08-01-residence-problem-tracker.md) (master RFC). Kept as a topic extract.
+
 # RFC: Problem Domain (Create, List, Detail)
 
 | Field | Value |

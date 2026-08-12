@@ -7,7 +7,7 @@
 | Client | Mobile-first web |
 | Launch | Single residence in use; multi-residence-ready data model |
 | Platform | **Netlify** hosting + **Netlify Database** (Postgres); see RFCs |
-| Related | RFCs under [`../rfc/`](../rfc/) (platform + problem tracker); decisions under [`../adr/`](../adr/) |
+| Related | Master RFC: [`../rfc/2026-08-01-residence-problem-tracker.md`](../rfc/2026-08-01-residence-problem-tracker.md); decisions under [`../adr/`](../adr/) |
 
 ## 1. Summary
 

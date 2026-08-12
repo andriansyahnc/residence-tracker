@@ -4,28 +4,31 @@ Proposed designs for review **before** implementation.
 
 ## Naming
 
-`YYYY-MM-DD-short-title.md`  
-Example: `2026-08-01-auth-and-membership.md`
+`YYYY-MM-DD-short-title.md`
 
 ## Index
 
-### Platform
+### Master (read this)
 
 | RFC | Status | Topic |
 |-----|--------|-------|
-| [`2026-08-01-system-architecture.md`](2026-08-01-system-architecture.md) | Proposed | TanStack Start + Netlify Database + Netlify, tenancy, API shape |
-| [`2026-08-01-netlify-database.md`](2026-08-01-netlify-database.md) | Proposed | Netlify Database (Postgres) access, migrations, env |
-| [`2026-08-01-auth-and-membership.md`](2026-08-01-auth-and-membership.md) | Proposed | Magic-link auth on Netlify DB, membership roles (PRD Q1/Q2) |
+| [`2026-08-01-residence-problem-tracker.md`](2026-08-01-residence-problem-tracker.md) | Proposed | **Full MVP design** — stack, DB, auth, problems, status, comments, UX, edge cases |
+| [`2026-08-12-ipl-tracker.md`](2026-08-12-ipl-tracker.md) | Accepted | **IPL add-on** — dues, proofs, accountant role, combined report/PDF, PWA (delta on problem-tracker master) |
 
-### Problem tracker
+### Topic extracts (superseded as source of truth)
 
-| RFC | Status | Topic |
-|-----|--------|-------|
-| [`2026-08-01-problem-domain.md`](2026-08-01-problem-domain.md) | Proposed | Problem fields, create/list/detail, categories, validation |
-| [`2026-08-01-problem-status-lifecycle.md`](2026-08-01-problem-status-lifecycle.md) | Proposed | Status machine, transitions, reopen, concurrency |
-| [`2026-08-01-problem-comments.md`](2026-08-01-problem-comments.md) | Proposed | Append-only comments, visibility, reject comment |
-| [`2026-08-01-problem-tracker-ux.md`](2026-08-01-problem-tracker-ux.md) | Proposed | Mobile screens, empty/error states, IA |
-| [`2026-08-01-problem-validation-and-edge-cases.md`](2026-08-01-problem-validation-and-edge-cases.md) | Proposed | MVP edge-case checklist + test gate |
+Kept for easier navigation / git history. If they disagree with the master RFC, **the master wins**.
+
+| RFC | Topic |
+|-----|-------|
+| [`2026-08-01-system-architecture.md`](2026-08-01-system-architecture.md) | Stack & architecture |
+| [`2026-08-01-netlify-database.md`](2026-08-01-netlify-database.md) | Netlify Database |
+| [`2026-08-01-auth-and-membership.md`](2026-08-01-auth-and-membership.md) | Auth & roles |
+| [`2026-08-01-problem-domain.md`](2026-08-01-problem-domain.md) | Problem create/list/detail |
+| [`2026-08-01-problem-status-lifecycle.md`](2026-08-01-problem-status-lifecycle.md) | Status machine |
+| [`2026-08-01-problem-comments.md`](2026-08-01-problem-comments.md) | Comments |
+| [`2026-08-01-problem-tracker-ux.md`](2026-08-01-problem-tracker-ux.md) | Mobile UX |
+| [`2026-08-01-problem-validation-and-edge-cases.md`](2026-08-01-problem-validation-and-edge-cases.md) | Edge-case checklist |
 
 ## When to open an RFC
 
@@ -33,6 +36,8 @@ Example: `2026-08-01-auth-and-membership.md`
 - Multi-residence UX (switcher, invites)
 - Notifications, attachments, or other deferred PRD items
 - Anything with meaningful trade-offs that should be debated in writing
+
+Prefer amending the **master** RFC (or writing a focused delta RFC that links to it) over proliferating parallel full designs.
 
 ## Suggested sections
 
