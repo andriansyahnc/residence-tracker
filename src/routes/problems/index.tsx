@@ -7,9 +7,10 @@ import {
   PrimaryButton,
   ProblemListItem,
 } from '../../components/ui'
+import { IplNavTabs } from '../../components/ipl-nav'
 import { getAuthState, logout } from '../../server/auth.functions'
 import { listProblems } from '../../server/problems.functions'
-import type { ProblemStatus } from '../domain/types'
+import type { ProblemStatus } from '../../domain/types'
 
 export const Route = createFileRoute('/problems/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -64,6 +65,7 @@ function ProblemsPage() {
         </button>
       }
     >
+      <IplNavTabs user={user} active="masalah" />
       {isManager ? (
         <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
           {FILTER_STATUSES.map((status) => (
