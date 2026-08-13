@@ -1,5 +1,7 @@
 # Residence Problem Tracker MVP
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/7b450f64-2215-4f9d-bf81-1fea60064c7a/deploy-status)](https://app.netlify.com/projects/residence-tracker/deploys)
+
 Mobile-first problem tracker for a single residence. Built with TanStack Start, Drizzle ORM, and **Netlify Database** (Postgres).
 
 ## Docs
