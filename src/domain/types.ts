@@ -1,4 +1,4 @@
-export type Role = 'resident' | 'manager'
+export type Role = 'resident' | 'manager' | 'accountant'
 
 export type ProblemCategory =
   | 'maintenance'

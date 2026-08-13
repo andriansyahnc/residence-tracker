@@ -12,6 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NotAMemberRouteImport } from './routes/not-a-member'
+import { Route as IplIndexRouteImport } from './routes/ipl/index'
+import { Route as IplLaporanRouteImport } from './routes/ipl/laporan'
+import { Route as IplPengeluaranRouteImport } from './routes/ipl/pengeluaran'
+import { Route as IplVerifikasiRouteImport } from './routes/ipl/verifikasi'
 import { Route as ProblemsIndexRouteImport } from './routes/problems/index'
 import { Route as ProblemsProblemIdRouteImport } from './routes/problems/$problemId'
 import { Route as ProblemsNewRouteImport } from './routes/problems/new'
@@ -29,6 +33,26 @@ const LoginRoute = LoginRouteImport.update({
 const NotAMemberRoute = NotAMemberRouteImport.update({
   id: '/not-a-member',
   path: '/not-a-member',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IplIndexRoute = IplIndexRouteImport.update({
+  id: '/ipl/',
+  path: '/ipl/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IplLaporanRoute = IplLaporanRouteImport.update({
+  id: '/ipl/laporan',
+  path: '/ipl/laporan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IplPengeluaranRoute = IplPengeluaranRouteImport.update({
+  id: '/ipl/pengeluaran',
+  path: '/ipl/pengeluaran',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IplVerifikasiRoute = IplVerifikasiRouteImport.update({
+  id: '/ipl/verifikasi',
+  path: '/ipl/verifikasi',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProblemsIndexRoute = ProblemsIndexRouteImport.update({
@@ -51,16 +75,24 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/not-a-member': typeof NotAMemberRoute
+  '/ipl/laporan': typeof IplLaporanRoute
+  '/ipl/pengeluaran': typeof IplPengeluaranRoute
+  '/ipl/verifikasi': typeof IplVerifikasiRoute
   '/problems/$problemId': typeof ProblemsProblemIdRoute
   '/problems/new': typeof ProblemsNewRoute
+  '/ipl/': typeof IplIndexRoute
   '/problems/': typeof ProblemsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/not-a-member': typeof NotAMemberRoute
+  '/ipl/laporan': typeof IplLaporanRoute
+  '/ipl/pengeluaran': typeof IplPengeluaranRoute
+  '/ipl/verifikasi': typeof IplVerifikasiRoute
   '/problems/$problemId': typeof ProblemsProblemIdRoute
   '/problems/new': typeof ProblemsNewRoute
+  '/ipl': typeof IplIndexRoute
   '/problems': typeof ProblemsIndexRoute
 }
 export interface FileRoutesById {
@@ -68,8 +100,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/not-a-member': typeof NotAMemberRoute
+  '/ipl/laporan': typeof IplLaporanRoute
+  '/ipl/pengeluaran': typeof IplPengeluaranRoute
+  '/ipl/verifikasi': typeof IplVerifikasiRoute
   '/problems/$problemId': typeof ProblemsProblemIdRoute
   '/problems/new': typeof ProblemsNewRoute
+  '/ipl/': typeof IplIndexRoute
   '/problems/': typeof ProblemsIndexRoute
 }
 export interface FileRouteTypes {
@@ -78,24 +114,36 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/not-a-member'
+    | '/ipl/laporan'
+    | '/ipl/pengeluaran'
+    | '/ipl/verifikasi'
     | '/problems/$problemId'
     | '/problems/new'
+    | '/ipl/'
     | '/problems/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/not-a-member'
+    | '/ipl/laporan'
+    | '/ipl/pengeluaran'
+    | '/ipl/verifikasi'
     | '/problems/$problemId'
     | '/problems/new'
+    | '/ipl'
     | '/problems'
   id:
     | '__root__'
     | '/'
     | '/login'
     | '/not-a-member'
+    | '/ipl/laporan'
+    | '/ipl/pengeluaran'
+    | '/ipl/verifikasi'
     | '/problems/$problemId'
     | '/problems/new'
+    | '/ipl/'
     | '/problems/'
   fileRoutesById: FileRoutesById
 }
@@ -103,8 +151,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   NotAMemberRoute: typeof NotAMemberRoute
+  IplLaporanRoute: typeof IplLaporanRoute
+  IplPengeluaranRoute: typeof IplPengeluaranRoute
+  IplVerifikasiRoute: typeof IplVerifikasiRoute
   ProblemsProblemIdRoute: typeof ProblemsProblemIdRoute
   ProblemsNewRoute: typeof ProblemsNewRoute
+  IplIndexRoute: typeof IplIndexRoute
   ProblemsIndexRoute: typeof ProblemsIndexRoute
 }
 
@@ -129,6 +181,34 @@ declare module '@tanstack/react-router' {
       path: '/not-a-member'
       fullPath: '/not-a-member'
       preLoaderRoute: typeof NotAMemberRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ipl/': {
+      id: '/ipl/'
+      path: '/ipl'
+      fullPath: '/ipl/'
+      preLoaderRoute: typeof IplIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ipl/laporan': {
+      id: '/ipl/laporan'
+      path: '/ipl/laporan'
+      fullPath: '/ipl/laporan'
+      preLoaderRoute: typeof IplLaporanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ipl/pengeluaran': {
+      id: '/ipl/pengeluaran'
+      path: '/ipl/pengeluaran'
+      fullPath: '/ipl/pengeluaran'
+      preLoaderRoute: typeof IplPengeluaranRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ipl/verifikasi': {
+      id: '/ipl/verifikasi'
+      path: '/ipl/verifikasi'
+      fullPath: '/ipl/verifikasi'
+      preLoaderRoute: typeof IplVerifikasiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/problems/': {
@@ -159,19 +239,14 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   NotAMemberRoute: NotAMemberRoute,
+  IplLaporanRoute: IplLaporanRoute,
+  IplPengeluaranRoute: IplPengeluaranRoute,
+  IplVerifikasiRoute: IplVerifikasiRoute,
   ProblemsProblemIdRoute: ProblemsProblemIdRoute,
   ProblemsNewRoute: ProblemsNewRoute,
+  IplIndexRoute: IplIndexRoute,
   ProblemsIndexRoute: ProblemsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
