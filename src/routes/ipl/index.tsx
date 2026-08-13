@@ -1,10 +1,10 @@
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { useState } from 'react'
-import { IplNavTabs } from '../components/ipl-nav'
-import { AppShell } from '../components/ui'
-import { getAuthState } from '../server/auth.functions'
-import { listMyIplDues, uploadIplProof } from '../server/ipl.functions'
+import { IplNavTabs } from '../../components/ipl-nav'
+import { AppShell } from '../../components/ui'
+import { getAuthState } from '../../server/auth.functions'
+import { listMyIplDues, uploadIplProof } from '../../server/ipl.functions'
 
 export const Route = createFileRoute('/ipl/')({
   beforeLoad: async () => {

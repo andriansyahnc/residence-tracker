@@ -1,12 +1,10 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { PGlite } from '@electric-sql/pglite'
 import { getConnectionString } from '@netlify/database'
 import { drizzle as drizzleNodePg } from 'drizzle-orm/node-postgres'
-import { drizzle as drizzlePglite } from 'drizzle-orm/pglite'
+import type { drizzle as drizzlePglite } from 'drizzle-orm/pglite'
 import pg from 'pg'
 import * as schema from './schema'
-import { seedDatabase } from './seed'
 
 export type AppDatabase =
   | ReturnType<typeof drizzleNodePg<typeof schema>>
@@ -33,24 +31,6 @@ export function getDb(): AppDatabase {
   return db
 }
 
-async function applySqlMigrations(client: PGlite) {
-  const dir = join(process.cwd(), 'netlify/database/migrations')
-  const files = readdirSync(dir)
-    .filter((file) => file.endsWith('.sql'))
-    .sort()
-  for (const file of files) {
-    await client.exec(readFileSync(join(dir, file), 'utf8'))
-  }
-}
-
-export async function createTestDb(): Promise<AppDatabase> {
-  const client = new PGlite()
-  await applySqlMigrations(client)
-  const database = drizzlePglite(client, { schema })
-  await seedDatabase(database)
-  return database
-}
-
 export async function resetDbForTests() {
   if (pool) {
     await pool.end()
@@ -60,3 +40,9 @@ export async function resetDbForTests() {
 }
 
 export { schema }
+
+/** Test-only helper — kept in this module's sibling to avoid bundling PGlite in production. */
+export async function createTestDb(): Promise<AppDatabase> {
+  const { createTestDb: create } = await import('./test-db')
+  return create()
+}
