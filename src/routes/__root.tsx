@@ -15,8 +15,21 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1, viewport-fit=cover',
       },
       { title: 'Residence Problem Tracker' },
+      { name: 'theme-color', content: '#0f172a' },
+      { name: 'mobile-web-app-capable', content: 'yes' },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'stylesheet', href: appCss },
+      { rel: 'manifest', href: '/manifest.webmanifest' },
+      { rel: 'icon', type: 'image/png', href: '/icon-192.png' },
+      { rel: 'apple-touch-icon', href: '/icon-192.png' },
+    ],
+    scripts: [
+      {
+        children:
+          "if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js')})}",
+      },
+    ],
   }),
   shellComponent: RootDocument,
 })

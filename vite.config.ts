@@ -4,7 +4,6 @@ import netlify from '@netlify/vite-plugin-tanstack-start'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { VitePWA } from 'vite-plugin-pwa'
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
@@ -14,22 +13,10 @@ const config = defineConfig({
     tanstackStart(),
     netlify(),
     viteReact(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      manifest: {
-        name: 'Residence Tracker',
-        short_name: 'Residence',
-        lang: 'id',
-        display: 'standalone',
-        start_url: '/',
-        background_color: '#ffffff',
-        theme_color: '#0f172a',
-      },
-      workbox: {
-        navigateFallback: '/',
-      },
-    }),
   ],
+  // The PWA files are plain static files in public/: manifest.webmanifest,
+  // sw.js and the icons. vite-plugin-pwa emitted a manifest but never a
+  // service worker under TanStack Start's two-pass build, so it is gone.
 })
 
 export default config
