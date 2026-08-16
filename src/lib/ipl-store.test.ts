@@ -62,8 +62,6 @@ describe('ipl-store', () => {
     const periods = await store.listPeriods(resident)
 
     expect(periods.map((p) => p.yearMonth)).toEqual(['2026-08', '2026-07'])
-    // 2026-06 exists, but only in the demo management group.
-    expect(periods.some((p) => p.yearMonth === '2026-06')).toBe(false)
   })
 
   it('duplicate openPeriod conflicts', async () => {

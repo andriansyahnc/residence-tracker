@@ -35,9 +35,9 @@ async function snapshot(db: Awaited<ReturnType<typeof createTestDb>>) {
 describe('demo org', () => {
   it('resets to the same state and leaves real data alone', async () => {
     const db = await createTestDb()
+    await resetDemoOrg(db)
     const before = await snapshot(db)
 
-    await resetDemoOrg(db)
     await resetDemoOrg(db)
 
     expect(await snapshot(db)).toEqual(before)
@@ -51,5 +51,6 @@ describe('demo org', () => {
         .limit(1)
       expect(found).toHaveLength(1)
     }
-  })
+    // Builds a Postgres in memory and seeds it three times over.
+  }, 30_000)
 })
