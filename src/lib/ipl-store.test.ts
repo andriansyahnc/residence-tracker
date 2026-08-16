@@ -55,6 +55,17 @@ describe('ipl-store', () => {
     expect(mine.find((d) => d.unitId === 'unit-1a')!.amountIdr).toBe(1_000_000)
   })
 
+  it('listPeriods returns own group newest-first', async () => {
+    await store.openPeriod(manager, '2026-07')
+    await store.openPeriod(manager, '2026-08')
+
+    const periods = await store.listPeriods(resident)
+
+    expect(periods.map((p) => p.yearMonth)).toEqual(['2026-08', '2026-07'])
+    // 2026-06 exists, but only in the demo management group.
+    expect(periods.some((p) => p.yearMonth === '2026-06')).toBe(false)
+  })
+
   it('duplicate openPeriod conflicts', async () => {
     await store.openPeriod(manager, '2026-08')
     await expect(store.openPeriod(manager, '2026-08')).rejects.toMatchObject({

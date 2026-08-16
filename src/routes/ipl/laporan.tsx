@@ -8,6 +8,7 @@ import { getAuthState } from '../../server/auth.functions'
 import {
   downloadIplReportPdf,
   getIplReport,
+  listIplPeriods,
   upsertIplKeterangan,
 } from '../../server/ipl.functions'
 
@@ -20,23 +21,29 @@ export const Route = createFileRoute('/ipl/laporan')({
   },
   validateSearch: (search: Record<string, unknown>) => ({
     yearMonth:
-      typeof search.yearMonth === 'string' ? search.yearMonth : '2026-08',
+      typeof search.yearMonth === 'string' ? search.yearMonth : undefined,
   }),
   loaderDeps: ({ search }) => ({ search }),
   loader: async ({ context, deps }) => {
+    const periods = await listIplPeriods()
+    // No month in the URL means the newest one the group has.
+    const yearMonth = deps.search.yearMonth ?? periods[0]?.yearMonth
     let report = null
-    try {
-      report = await getIplReport({ data: { yearMonth: deps.search.yearMonth } })
-    } catch {
-      report = null
+    if (yearMonth) {
+      try {
+        report = await getIplReport({ data: { yearMonth } })
+      } catch {
+        report = null
+      }
     }
-    return { report, user: context.user, yearMonth: deps.search.yearMonth }
+    return { report, periods, user: context.user, yearMonth }
   },
   component: LaporanPage,
 })
 
 function LaporanPage() {
-  const { report, user, yearMonth } = Route.useLoaderData()
+  const { report, periods, user, yearMonth } = Route.useLoaderData()
+  const navigate = Route.useNavigate()
   const staff = canIplStaff({
     userId: user.userId,
     residenceId: user.residenceId,
@@ -47,11 +54,36 @@ function LaporanPage() {
   const [ket, setKet] = useState(report?.keterangan ?? '')
 
   return (
-    <AppShell title="Laporan" subtitle={`Gabungan ${yearMonth}`} role={user.role}>
+    <AppShell
+      title="Laporan"
+      subtitle={yearMonth ? `Gabungan ${yearMonth}` : 'Gabungan'}
+      role={user.role}
+    >
       <IplNavTabs user={user} active="laporan" />
+      {periods.length > 0 ? (
+        <label className="mb-4 block space-y-2">
+          <span className="auralis-label">Bulan</span>
+          <select
+            className="auralis-input"
+            value={yearMonth ?? ''}
+            onChange={(e) =>
+              navigate({ search: { yearMonth: e.target.value } })
+            }
+          >
+            {periods.map((p) => (
+              <option key={p.yearMonth} value={p.yearMonth}>
+                {p.yearMonth}
+                {p.status === 'open' ? ' (buka)' : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       {!report ? (
         <p className="text-sm text-[var(--text-secondary)]">
-          Laporan {yearMonth} belum tersedia.
+          {yearMonth
+            ? `Laporan ${yearMonth} belum tersedia.`
+            : 'Belum ada periode IPL.'}
         </p>
       ) : (
         <div className="space-y-3 text-sm">
@@ -90,7 +122,9 @@ function LaporanPage() {
               <PrimaryButton
                 type="button"
                 onClick={async () => {
-                  const file = await downloadPdf({ data: { yearMonth } })
+                  const file = await downloadPdf({
+                    data: { yearMonth: report.yearMonth },
+                  })
                   const bin = atob(file.base64)
                   const bytes = new Uint8Array(bin.length)
                   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)

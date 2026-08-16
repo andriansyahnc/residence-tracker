@@ -585,6 +585,19 @@ export function createIplStore(db: Db, blobs: BlobAdapter = memoryBlobAdapter())
       return { periodId, keterangan }
     },
 
+    /** Months the group has a period for, newest first. Feeds the laporan picker. */
+    async listPeriods(user: SessionUser) {
+      const managementGroupId = await resolveManagementGroupId(user.residenceId)
+      const rows = await db
+        .select({
+          yearMonth: iplPeriods.yearMonth,
+          status: iplPeriods.status,
+        })
+        .from(iplPeriods)
+        .where(eq(iplPeriods.managementGroupId, managementGroupId))
+      return rows.sort((a, b) => b.yearMonth.localeCompare(a.yearMonth))
+    },
+
     async getMonthlyReport(user: SessionUser, yearMonthRaw: string) {
       const ym = validateYearMonth(yearMonthRaw)
       if (!ym.ok) throw new AppError('VALIDATION', ym.error)
