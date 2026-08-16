@@ -6,6 +6,19 @@
   command = "pnpm dev"
   port = 3000
 
+# Netlify serves .webmanifest as application/octet-stream, which browsers
+# refuse to read as a manifest — no manifest, no install button.
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json; charset=utf-8"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    Service-Worker-Allowed = "/"
+
 [build.environment]
   NODE_VERSION = "22"
   CI = "true"
