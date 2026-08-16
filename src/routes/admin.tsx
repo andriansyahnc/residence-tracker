@@ -131,65 +131,106 @@ function AdminPage() {
         </PrimaryButton>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium">User</h2>
-        {overview.users.map((u) => (
-          <div
-            key={u.userId}
-            className="rounded-lg border border-[var(--border)] p-3 text-sm"
-          >
-            <div className="font-medium">{u.displayName}</div>
-            <div className="text-[var(--text-secondary)]">{u.email}</div>
-            {u.platformRole ? (
-              <span className="auralis-chip auralis-chip-role mt-1">
-                {u.platformRole}
-              </span>
+      <section className="space-y-5">
+        <h2 className="text-sm font-medium">User per perumahan</h2>
+        {groupUsersByResidence(overview).map((group) => (
+          <div key={group.residenceId} className="space-y-2">
+            <h3 className="text-sm text-[var(--text-secondary)]">
+              {group.residenceName} ({group.members.length})
+            </h3>
+            {group.members.length === 0 ? (
+              <p className="text-sm text-[var(--text-secondary)]">
+                Belum ada user.
+              </p>
             ) : null}
-            {u.memberships.map((m) => (
-              <div key={m.residenceId} className="mt-2 flex items-center gap-2">
-                <span className="flex-1">{m.residenceName}</span>
-                <select
-                  className="auralis-input !w-auto"
-                  defaultValue={m.role}
-                  onChange={(e) =>
-                    run(() =>
-                      changeRole({
-                        data: {
-                          userId: u.userId,
-                          residenceId: m.residenceId,
-                          role: e.target.value as (typeof ROLES)[number],
-                        },
-                      }),
-                    )
-                  }
-                >
-                  {ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
+            {group.members.map(({ user, role }) => (
+              <div
+                key={`${group.residenceId}-${user.userId}`}
+                className="rounded-lg border border-[var(--border)] p-3 text-sm"
+              >
+                <div className="font-medium">{user.displayName}</div>
+                <div className="text-[var(--text-secondary)]">{user.email}</div>
+                {user.platformRole ? (
+                  <span className="auralis-chip auralis-chip-role mt-1">
+                    {user.platformRole}
+                  </span>
+                ) : null}
+                {role ? (
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="flex-1">Peran</span>
+                    <select
+                      className="auralis-input !w-auto"
+                      defaultValue={role}
+                      onChange={(e) =>
+                        run(() =>
+                          changeRole({
+                            data: {
+                              userId: user.userId,
+                              residenceId: group.residenceId,
+                              role: e.target.value as (typeof ROLES)[number],
+                            },
+                          }),
+                        )
+                      }
+                    >
+                      {ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+                {canImpersonate(user) ? (
+                  <button
+                    type="button"
+                    className="auralis-btn-ghost mt-2 text-sm"
+                    onClick={() =>
+                      run(async () => {
+                        await impersonate({ data: { targetUserId: user.userId } })
+                        window.location.href = '/problems'
+                      })
+                    }
+                  >
+                    Masuk sebagai user ini
+                  </button>
+                ) : null}
               </div>
             ))}
-            {canImpersonate(u) ? (
-              <button
-                type="button"
-                className="auralis-btn-ghost mt-2 text-sm"
-                onClick={() =>
-                  run(async () => {
-                    await impersonate({ data: { targetUserId: u.userId } })
-                    window.location.href = '/problems'
-                  })
-                }
-              >
-                Masuk sebagai user ini
-              </button>
-            ) : null}
           </div>
         ))}
       </section>
     </AppShell>
   )
+}
+
+type Overview = Awaited<ReturnType<typeof getAdminOverview>>
+
+/**
+ * One block per residence. A user in two residences shows up in both, with the
+ * role they hold there. Users in none — a superadmin — go in the last block.
+ */
+function groupUsersByResidence(overview: Overview) {
+  const groups = overview.residences.map((residence) => ({
+    residenceId: residence.id,
+    residenceName: residence.name,
+    members: overview.users
+      .filter((u) => u.memberships.some((m) => m.residenceId === residence.id))
+      .map((user) => ({
+        user,
+        role: user.memberships.find((m) => m.residenceId === residence.id)!.role,
+      })),
+  }))
+
+  const orphans = overview.users.filter((u) => u.memberships.length === 0)
+  if (orphans.length > 0) {
+    groups.push({
+      residenceId: '__none__',
+      residenceName: 'Tanpa perumahan',
+      members: orphans.map((user) => ({ user, role: null as never })),
+    })
+  }
+  return groups
 }
 
 /** Mirrors the server rule: admins, managers and accountants only. */
