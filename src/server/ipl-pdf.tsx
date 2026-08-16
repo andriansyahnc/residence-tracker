@@ -10,7 +10,12 @@ import {
 export type IplReportPdfView = {
   yearMonth: string
   residences: { id: string; name: string; incomeIdr: number }[]
-  expenses: { id: string; category: string; amountIdr: number }[]
+  expenses: {
+    id: string
+    category: string
+    amountIdr: number
+    expenseDate: string
+  }[]
   saldoTotalIdr: number
   keterangan: string
 }
@@ -35,6 +40,13 @@ function monthLabel(yearMonth: string) {
   const [year, month] = yearMonth.split('-')
   const name = MONTHS[Number(month) - 1]
   return name ? `${name} ${year}` : yearMonth
+}
+
+/** '2026-08-10' -> '10 Agu'. Falls back to the raw value if it is not YYYY-MM-DD. */
+function dayLabel(date: string) {
+  const [, month, day] = date.split('-')
+  const name = MONTHS[Number(month) - 1]
+  return name && day ? `${Number(day)} ${name.slice(0, 3)}` : date
 }
 
 function rupiah(value: number) {
@@ -89,6 +101,7 @@ const styles = StyleSheet.create({
     backgroundColor: BAND,
   },
   headCell: { fontSize: 9, letterSpacing: 0.6, color: MUTED },
+  date: { width: 60 },
   label: { flex: 1, paddingRight: 12 },
   amount: { width: 130, textAlign: 'right' },
 
@@ -160,25 +173,39 @@ function Table({
   totalLabel,
   total,
 }: {
-  head: [string, string]
-  rows: { id: string; label: string; amountIdr: number }[]
+  /** Two or three columns: [label, amount] or [date, label, amount]. */
+  head: [string, string] | [string, string, string]
+  rows: { id: string; date?: string; label: string; amountIdr: number }[]
   totalLabel: string
   total: number
 }) {
+  const dated = head.length === 3
+
   return (
     <View>
       <View style={styles.rowHead}>
-        <Text style={[styles.headCell, styles.label]}>{head[0]}</Text>
-        <Text style={[styles.headCell, styles.amount]}>{head[1]}</Text>
+        {dated ? (
+          <Text style={[styles.headCell, styles.date]}>{head[0]}</Text>
+        ) : null}
+        <Text style={[styles.headCell, styles.label]}>
+          {dated ? head[1] : head[0]}
+        </Text>
+        <Text style={[styles.headCell, styles.amount]}>
+          {dated ? head[2] : head[1]}
+        </Text>
       </View>
       {rows.length === 0 ? (
         <View style={styles.row}>
+          {dated ? <Text style={styles.date} /> : null}
           <Text style={[styles.label, styles.empty]}>Tidak ada data</Text>
           <Text style={styles.amount}>{rupiah(0)}</Text>
         </View>
       ) : (
         rows.map((r) => (
           <View key={r.id} style={styles.row}>
+            {dated ? (
+              <Text style={styles.date}>{r.date ? dayLabel(r.date) : '—'}</Text>
+            ) : null}
             <Text style={styles.label}>{r.label}</Text>
             <Text style={styles.amount}>{rupiah(r.amountIdr)}</Text>
           </View>
@@ -224,9 +251,10 @@ function IplReportDocument({ report }: { report: IplReportPdfView }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>PENGELUARAN</Text>
           <Table
-            head={['Kategori', 'Jumlah']}
+            head={['Tanggal', 'Kategori', 'Jumlah']}
             rows={report.expenses.map((e) => ({
               id: e.id,
+              date: e.expenseDate,
               label: e.category,
               amountIdr: e.amountIdr,
             }))}

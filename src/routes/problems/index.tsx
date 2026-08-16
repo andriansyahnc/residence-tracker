@@ -9,7 +9,7 @@ import {
   ProblemListItem,
 } from '../../components/ui'
 import { IplNavTabs } from '../../components/ipl-nav'
-import { getAuthState, logout } from '../../server/auth.functions'
+import { getAuthState } from '../../server/auth.functions'
 import { resetDemo } from '../../server/demo.functions'
 import { DEMO_RESIDENCE_ID } from '../../domain/constants'
 import { listProblems } from '../../server/problems.functions'
@@ -47,7 +47,6 @@ function ProblemsPage() {
   const { problems, user } = Route.useLoaderData()
   const search = Route.useSearch()
   const router = useRouter()
-  const logoutFn = useServerFn(logout)
   const resetDemoFn = useServerFn(resetDemo)
   const [resetting, setResetting] = useState(false)
 
@@ -59,18 +58,6 @@ function ProblemsPage() {
       title={user.residenceName}
       subtitle={isManager ? 'All problems' : 'My problems'}
       role={user.role}
-      action={
-        <button
-          type="button"
-          className="text-sm text-[var(--text-secondary)] auralis-btn-ghost !no-underline"
-          onClick={async () => {
-            await logoutFn()
-            window.location.href = '/login'
-          }}
-        >
-          Sign out
-        </button>
-      }
     >
       <IplNavTabs user={user} active="masalah" />
       {isDemoManager ? (

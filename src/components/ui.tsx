@@ -1,4 +1,6 @@
 import { Link } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
+import { logout } from '../server/auth.functions'
 import type { ProblemStatus } from '../domain/types'
 
 const STATUS_LABELS: Record<ProblemStatus, string> = {
@@ -53,6 +55,9 @@ export function AppShell({
   children: React.ReactNode
   action?: React.ReactNode
 }) {
+  // Sign out lives here so every screen has it, not just the problems list.
+  const logoutFn = useServerFn(logout)
+
   return (
     <div className="auralis-bg mx-auto min-h-[calc(100vh-8rem)] max-w-lg px-4 py-4">
       <header className="mb-6 flex items-start justify-between gap-3">
@@ -67,7 +72,19 @@ export function AppShell({
             <span className="auralis-chip auralis-chip-role mt-2">{role}</span>
           ) : null}
         </div>
-        {action}
+        <div className="flex shrink-0 items-center gap-2">
+          {action}
+          <button
+            type="button"
+            className="text-sm text-[var(--text-secondary)] auralis-btn-ghost !no-underline"
+            onClick={async () => {
+              await logoutFn()
+              window.location.href = '/login'
+            }}
+          >
+            Keluar
+          </button>
+        </div>
       </header>
       {children}
     </div>

@@ -9,7 +9,14 @@ describe('ipl pdf', () => {
         { id: 'res-1', name: 'Oak', incomeIdr: 1000 },
         { id: 'res-2', name: 'Pine', incomeIdr: 500 },
       ],
-      expenses: [{ id: 'e1', category: 'Kebersihan', amountIdr: 200 }],
+      expenses: [
+        {
+          id: 'e1',
+          category: 'Kebersihan',
+          amountIdr: 200,
+          expenseDate: '2026-08-10',
+        },
+      ],
       saldoTotalIdr: 1300,
       keterangan: 'Catatan akhir bulan',
     })
