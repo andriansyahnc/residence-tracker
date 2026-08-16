@@ -1,6 +1,7 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useRouteContext } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { logout } from '../server/auth.functions'
+import { stopImpersonation } from '../server/admin.functions'
 import type { ProblemStatus } from '../domain/types'
 
 const STATUS_LABELS: Record<ProblemStatus, string> = {
@@ -42,6 +43,26 @@ export function formatRelativeTime(iso: string) {
   return date.toLocaleDateString()
 }
 
+/** Shown while a superadmin is borrowing someone else's account. */
+export function ImpersonationBar({ displayName }: { displayName: string }) {
+  const stop = useServerFn(stopImpersonation)
+  return (
+    <div className="flex items-center justify-between gap-3 bg-amber-100 px-4 py-2 text-sm text-amber-900">
+      <span>Kamu masuk sebagai {displayName}</span>
+      <button
+        type="button"
+        className="underline"
+        onClick={async () => {
+          await stop()
+          window.location.href = '/admin'
+        }}
+      >
+        Kembali
+      </button>
+    </div>
+  )
+}
+
 export function AppShell({
   title,
   subtitle,
@@ -57,9 +78,15 @@ export function AppShell({
 }) {
   // Sign out lives here so every screen has it, not just the problems list.
   const logoutFn = useServerFn(logout)
+  const { impersonatedName } = useRouteContext({ from: '__root__' })
 
   return (
     <div className="auralis-bg mx-auto min-h-[calc(100vh-8rem)] max-w-lg px-4 py-4">
+      {impersonatedName ? (
+        <div className="-mx-4 -mt-4 mb-4">
+          <ImpersonationBar displayName={impersonatedName} />
+        </div>
+      ) : null}
       <header className="mb-6 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-medium text-[var(--text-primary)]">

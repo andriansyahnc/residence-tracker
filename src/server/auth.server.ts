@@ -22,8 +22,11 @@ function sessionConfig() {
   }
 }
 
+/** While impersonating, `userId` is the borrowed account and `realUserId` is yours. */
+type SessionData = { userId: string; realUserId?: string }
+
 export async function readSessionAuth(): Promise<AuthLookup | null> {
-  const session = await useSession<{ userId: string }>(sessionConfig())
+  const session = await useSession<SessionData>(sessionConfig())
   const userId = session.data.userId
   if (!userId) return null
 
@@ -43,12 +46,36 @@ export async function readSessionUser(): Promise<SessionUser | null> {
 }
 
 export async function writeSessionUser(userId: string) {
-  const session = await useSession<{ userId: string }>(sessionConfig())
-  await session.update({ userId })
+  const session = await useSession<SessionData>(sessionConfig())
+  await session.update({ userId, realUserId: undefined })
+}
+
+/** The account you signed in with. Same as the session user unless impersonating. */
+export async function readRealUserId(): Promise<string | null> {
+  const session = await useSession<SessionData>(sessionConfig())
+  return session.data.realUserId ?? session.data.userId ?? (null as string | null)
+}
+
+export async function readImpersonatedUserId(): Promise<string | null> {
+  const session = await useSession<SessionData>(sessionConfig())
+  return session.data.realUserId ? session.data.userId ?? null : null
+}
+
+export async function startSessionImpersonation(targetUserId: string) {
+  const session = await useSession<SessionData>(sessionConfig())
+  const realUserId = session.data.realUserId ?? session.data.userId
+  await session.update({ userId: targetUserId, realUserId })
+}
+
+export async function stopSessionImpersonation() {
+  const session = await useSession<SessionData>(sessionConfig())
+  const realUserId = session.data.realUserId
+  if (!realUserId) return
+  await session.update({ userId: realUserId, realUserId: undefined })
 }
 
 export async function clearSession() {
-  const session = await useSession<{ userId: string }>(sessionConfig())
+  const session = await useSession<SessionData>(sessionConfig())
   await session.clear()
   deleteCookie(SESSION_COOKIE)
 }

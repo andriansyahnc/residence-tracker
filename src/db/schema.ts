@@ -94,6 +94,35 @@ export const comments = pgTable('comments', {
   createdAt: text('created_at').notNull(),
 })
 
+/**
+ * Roles that sit above a residence. `memberships.role` is always scoped to one
+ * residence; these are not — a superadmin sees every residence.
+ */
+export const platformRoles = pgTable('platform_roles', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => profiles.id),
+  role: text('role', { enum: ['superadmin', 'admin'] }).notNull(),
+  createdAt: text('created_at').notNull(),
+})
+
+/** One row per "sign in as someone else". Kept for the record, never deleted. */
+export const impersonationLog = pgTable(
+  'impersonation_log',
+  {
+    id: text('id').primaryKey(),
+    actorUserId: text('actor_user_id')
+      .notNull()
+      .references(() => profiles.id),
+    targetUserId: text('target_user_id')
+      .notNull()
+      .references(() => profiles.id),
+    startedAt: text('started_at').notNull(),
+    endedAt: text('ended_at'),
+  },
+  (t) => [index('impersonation_log_actor_idx').on(t.actorUserId, t.startedAt)],
+)
+
 export const managementGroups = pgTable('management_groups', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),

@@ -2,6 +2,7 @@ import { Link, createFileRoute, redirect, useRouter } from '@tanstack/react-rout
 import { useState } from 'react'
 import { useServerFn } from '@tanstack/react-start'
 import { getAuthState, getSession, loginWithEmail } from '../server/auth.functions'
+import { getAdminContext } from '../server/admin.functions'
 
 export const Route = createFileRoute('/login')({
   beforeLoad: async () => {
@@ -10,7 +11,11 @@ export const Route = createFileRoute('/login')({
       throw redirect({ to: '/problems' })
     }
     if (auth?.kind === 'no-membership') {
-      throw redirect({ to: '/not-a-member' })
+      // A superadmin has no residence, so send them to their own page.
+      const context = await getAdminContext()
+      throw redirect({
+        to: context?.platformRole === 'superadmin' ? '/admin' : '/not-a-member',
+      })
     }
   },
   component: LoginPage,

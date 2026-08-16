@@ -27,7 +27,15 @@ export const loginWithEmail = createServerFn({ method: 'POST' })
     const { writeSessionUser } = await import('./auth.server')
     if (auth.kind === 'no-membership') {
       await writeSessionUser(auth.userId)
-      return { ok: true as const, redirectTo: '/not-a-member' as const }
+      // A superadmin belongs to no residence, so "no membership" is normal.
+      const { getAdminStore } = await import('../lib/admin-store')
+      const platformRole = await getAdminStore().platformRoleOf(auth.userId)
+      return {
+        ok: true as const,
+        redirectTo: (platformRole === 'superadmin'
+          ? '/admin'
+          : '/not-a-member') as '/admin' | '/not-a-member',
+      }
     }
 
     await writeSessionUser(auth.user.userId)

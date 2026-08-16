@@ -1,12 +1,23 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { getAdminContext } from '../server/admin.functions'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
 
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
+  // Every screen needs to know whether it is being viewed through someone
+  // else's account, so the banner can be shown.
+  beforeLoad: async () => {
+    const context = await getAdminContext()
+    return {
+      impersonatedName: context?.impersonatedUserId
+        ? (context.impersonatedDisplayName ?? 'user lain')
+        : null,
+    }
+  },
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
