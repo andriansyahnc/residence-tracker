@@ -52,6 +52,44 @@ function requireIplStaff(user: SessionUser) {
   }
 }
 
+/** Columns of the history import file, in order. Also the template's header. */
+export const HISTORY_CSV_HEADER = [
+  'tipe',
+  'year_month',
+  'residence_id',
+  'unit',
+  'luas_m2',
+  'kategori',
+  'tanggal',
+  'jumlah_idr',
+  'lunas',
+] as const
+
+function isYes(value: string) {
+  const v = value.trim().toLowerCase()
+  return v === 'ya' || v === 'yes' || v === 'y' || v === 'true' || v === '1'
+}
+
+/** Splits a CSV, checks the header, and keeps the file's line numbers. */
+function parseCsv(csv: string, header: readonly string[]) {
+  const lines = csv
+    .trim()
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+  if (lines.length < 2) {
+    throw new AppError('VALIDATION', 'CSV butuh baris judul dan isi')
+  }
+  const got = lines[0].split(',').map((h) => h.trim())
+  if (got.join(',') !== header.join(',')) {
+    throw new AppError('VALIDATION', `Baris judul harus: ${header.join(',')}`)
+  }
+  return lines.slice(1).map((line, i) => ({
+    line: i + 2,
+    cells: header.map((_, col) => (line.split(',')[col] ?? '').trim()),
+  }))
+}
+
 export type BlobAdapter = {
   put: (key: string, bytes: Uint8Array, contentType: string) => Promise<void>
   get: (key: string) => Promise<Uint8Array | null>
@@ -88,6 +126,59 @@ export function createIplStore(db: Db, blobs: BlobAdapter = memoryBlobAdapter())
       .from(managementGroupResidences)
       .where(eq(managementGroupResidences.managementGroupId, managementGroupId))
     return rows.sort((a, b) => a.sortOrder - b.sortOrder)
+  }
+
+  /** Finds the month's period, or creates it closed. Used by the history import. */
+  async function ensureClosedPeriod(
+    managementGroupId: string,
+    yearMonth: string,
+    userId: string,
+  ) {
+    const [existing] = await db
+      .select()
+      .from(iplPeriods)
+      .where(
+        and(
+          eq(iplPeriods.managementGroupId, managementGroupId),
+          eq(iplPeriods.yearMonth, yearMonth),
+        ),
+      )
+      .limit(1)
+    if (existing) return existing
+
+    const period = {
+      id: id('period'),
+      managementGroupId,
+      yearMonth,
+      status: 'closed' as const,
+      openedAt: `${yearMonth}-01T00:00:00Z`,
+      openedByUserId: userId,
+    }
+    await db.insert(iplPeriods).values(period)
+    return period
+  }
+
+  /** Finds a unit by label, or creates it. Used by the history import. */
+  async function ensureUnit(residenceId: string, label: string, luasM2: number) {
+    const name = label.trim()
+    if (!name) throw new AppError('VALIDATION', 'unit wajib diisi')
+    const [existing] = await db
+      .select()
+      .from(units)
+      .where(and(eq(units.residenceId, residenceId), eq(units.label, name)))
+      .limit(1)
+    if (existing) return existing
+
+    const row = {
+      id: id('unit'),
+      residenceId,
+      label: name,
+      luasTanahM2: luasM2,
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+    }
+    await db.insert(units).values(row)
+    return row
   }
 
   async function requireOpenPeriod(periodId: string) {
@@ -710,6 +801,128 @@ export function createIplStore(db: Db, blobs: BlobAdapter = memoryBlobAdapter())
           imported++
         } catch (e) {
           errors.push(`line ${i + 1}: ${e instanceof Error ? e.message : 'error'}`)
+        }
+      }
+      return { imported, errors }
+    },
+
+    /**
+     * Imports past months the app never billed — the committee's old
+     * spreadsheets. One file carries both kinds of row, told apart by `tipe`:
+     * `tagihan` (what a unit owed) or `pengeluaran` (what was spent).
+     *
+     * The period and the units are created as needed, because history has none
+     * of them yet. Imported periods land closed.
+     */
+    async importHistoryCsv(user: SessionUser, csv: string) {
+      requireIplStaff(user)
+      const rows = parseCsv(csv, HISTORY_CSV_HEADER)
+      const groupId = await resolveManagementGroupId(user.residenceId)
+      const allowed = new Set(
+        (await groupResidenceIds(groupId)).map((r) => r.residenceId),
+      )
+
+      const errors: string[] = []
+      let imported = 0
+
+      for (const { line, cells } of rows) {
+        const [
+          tipe,
+          yearMonthRaw,
+          residenceId,
+          label,
+          luasRaw,
+          category,
+          dateRaw,
+          amountRaw,
+          lunasRaw,
+        ] = cells
+        try {
+          const ym = validateYearMonth(yearMonthRaw)
+          if (!ym.ok) throw new AppError('VALIDATION', ym.error)
+          const amountIdr = Number(amountRaw)
+          if (!(amountIdr > 0)) {
+            throw new AppError('VALIDATION', 'jumlah_idr harus lebih dari 0')
+          }
+          const period = await ensureClosedPeriod(groupId, ym.value, user.userId)
+
+          if (tipe === 'tagihan') {
+            if (!allowed.has(residenceId)) {
+              throw new AppError('VALIDATION', `residence_id ${residenceId} tidak dikenal`)
+            }
+            const luas = Number(luasRaw)
+            if (!(luas > 0)) {
+              throw new AppError('VALIDATION', 'luas_m2 harus lebih dari 0')
+            }
+            const unit = await ensureUnit(residenceId, label, luas)
+
+            const [existing] = await db
+              .select()
+              .from(iplDues)
+              .where(
+                and(eq(iplDues.periodId, period.id), eq(iplDues.unitId, unit.id)),
+              )
+              .limit(1)
+            if (existing) {
+              throw new AppError('CONFLICT', `unit ${label} sudah diimpor`)
+            }
+
+            const dueId = id('due')
+            await db.insert(iplDues).values({
+              id: dueId,
+              periodId: period.id,
+              unitId: unit.id,
+              residenceId,
+              luasSnapshotM2: luas,
+              feePerM2SnapshotIdr: Math.round(amountIdr / luas),
+              amountIdr,
+              createdAt: `${ym.value}-01T00:00:00Z`,
+            })
+
+            // A verified proof is what makes the money count as income.
+            if (isYes(lunasRaw)) {
+              await db.insert(iplPaymentProofs).values({
+                id: id('proof'),
+                dueId,
+                blobKey: `import/${ym.value}/${residenceId}/${label}`,
+                mimeType: 'image/jpeg',
+                byteSize: 0,
+                status: 'verified',
+                uploadedByUserId: user.userId,
+                uploadedAt: `${ym.value}-01T00:00:00Z`,
+                reviewedByUserId: user.userId,
+                reviewedAt: `${ym.value}-01T00:00:00Z`,
+                reviewNote: 'Impor data lama',
+              })
+            }
+          } else if (tipe === 'pengeluaran') {
+            if (!category) throw new AppError('VALIDATION', 'kategori wajib diisi')
+            if (!dateRaw.startsWith(ym.value)) {
+              throw new AppError('VALIDATION', 'tanggal harus di bulan year_month')
+            }
+            const stamp = `${dateRaw}T00:00:00Z`
+            await db.insert(expenses).values({
+              id: id('expense'),
+              managementGroupId: groupId,
+              periodId: period.id,
+              category,
+              amountIdr,
+              expenseDate: dateRaw,
+              note: null,
+              receiptBlobKey: null,
+              receiptMimeType: null,
+              receiptByteSize: null,
+              createdByUserId: user.userId,
+              updatedByUserId: user.userId,
+              createdAt: stamp,
+              updatedAt: stamp,
+            })
+          } else {
+            throw new AppError('VALIDATION', 'tipe harus tagihan atau pengeluaran')
+          }
+          imported++
+        } catch (e) {
+          errors.push(`baris ${line}: ${e instanceof Error ? e.message : 'error'}`)
         }
       }
       return { imported, errors }

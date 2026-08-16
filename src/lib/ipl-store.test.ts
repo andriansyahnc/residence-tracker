@@ -64,6 +64,32 @@ describe('ipl-store', () => {
     expect(periods.map((p) => p.yearMonth)).toEqual(['2026-08', '2026-07'])
   })
 
+  it('imports an old month from one CSV', async () => {
+    const csv = [
+      'tipe,year_month,residence_id,unit,luas_m2,kategori,tanggal,jumlah_idr,lunas',
+      'tagihan,2025-01,res-1,H1,100,,,1000000,ya',
+      'tagihan,2025-01,res-1,H2,50,,,500000,tidak',
+      'pengeluaran,2025-01,,,,Keamanan,2025-01-05,300000,',
+      'pengeluaran,2025-01,,,,Kebersihan,2025-02-05,100000,',
+    ].join('\n')
+
+    const result = await store.importHistoryCsv(manager, csv)
+
+    expect(result.imported).toBe(3)
+    // The last row's date sits outside its own month.
+    expect(result.errors).toHaveLength(1)
+
+    const report = await store.getMonthlyReport(manager, '2025-01')
+    // Only the paid unit counts as income; the unpaid one does not.
+    expect(report.residences.find((r) => r.id === 'res-1')!.incomeIdr).toBe(
+      1_000_000,
+    )
+    expect(report.saldoTotalIdr).toBe(700_000)
+
+    const periods = await store.listPeriods(manager)
+    expect(periods.some((p) => p.yearMonth === '2025-01')).toBe(true)
+  })
+
   it('duplicate openPeriod conflicts', async () => {
     await store.openPeriod(manager, '2026-08')
     await expect(store.openPeriod(manager, '2026-08')).rejects.toMatchObject({

@@ -1,0 +1,8 @@
+tipe,year_month,residence_id,unit,luas_m2,kategori,tanggal,jumlah_idr,lunas
+tagihan,2025-01,res-1,A1,100,,,1000000,ya
+tagihan,2025-01,res-1,A2,120,,,1200000,ya
+tagihan,2025-01,res-1,A3,90,,,900000,tidak
+pengeluaran,2025-01,,,,Keamanan,2025-01-05,1500000,
+pengeluaran,2025-01,,,,Kebersihan,2025-01-12,600000,
+tagihan,2025-02,res-1,A1,100,,,1000000,ya
+pengeluaran,2025-02,,,,Keamanan,2025-02-05,1500000,

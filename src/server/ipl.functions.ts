@@ -41,6 +41,14 @@ export const listPendingIplProofs = createServerFn({ method: 'GET' }).handler(
   },
 )
 
+export const importIplHistoryCsv = createServerFn({ method: 'POST' })
+  .validator((data: { csv: string }) => data)
+  .handler(async ({ data }) => {
+    const { requireSessionUser } = await import('./auth.server')
+    const user = await requireSessionUser()
+    return getIplStore().importHistoryCsv(user, data.csv)
+  })
+
 export const listIplPeriods = createServerFn({ method: 'GET' }).handler(
   async () => {
     const { requireSessionUser } = await import('./auth.server')

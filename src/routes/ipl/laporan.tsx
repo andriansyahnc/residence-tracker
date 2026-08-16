@@ -8,6 +8,7 @@ import { getAuthState } from '../../server/auth.functions'
 import {
   downloadIplReportPdf,
   getIplReport,
+  importIplHistoryCsv,
   listIplPeriods,
   upsertIplKeterangan,
 } from '../../server/ipl.functions'
@@ -51,7 +52,10 @@ function LaporanPage() {
   })
   const saveKet = useServerFn(upsertIplKeterangan)
   const downloadPdf = useServerFn(downloadIplReportPdf)
+  const importCsv = useServerFn(importIplHistoryCsv)
   const [ket, setKet] = useState(report?.keterangan ?? '')
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState<string | null>(null)
 
   return (
     <AppShell
@@ -78,6 +82,51 @@ function LaporanPage() {
             ))}
           </select>
         </label>
+      ) : null}
+      {staff ? (
+        <div className="mb-4 space-y-2 rounded-lg border border-[var(--border)] p-3">
+          <p className="text-sm font-medium">Impor laporan lama (CSV)</p>
+          <p className="text-sm text-[var(--text-secondary)]">
+            Untuk bulan yang belum pernah ditagih lewat aplikasi. Unit dan
+            periode dibuat otomatis.
+          </p>
+          <a
+            href="/template-laporan-lama.csv"
+            download
+            className="block text-sm"
+          >
+            Unduh template CSV
+          </a>
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            className="block w-full text-sm"
+            disabled={importing}
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              setImporting(true)
+              setImportMsg(null)
+              try {
+                const result = await importCsv({ data: { csv: await file.text() } })
+                setImportMsg(
+                  `${result.imported} baris masuk.` +
+                    (result.errors.length
+                      ? ` Gagal: ${result.errors.join('; ')}`
+                      : ' Pilih bulannya di atas.'),
+                )
+                // Reruns the loader so the new months show in the picker.
+                await navigate({ search: { yearMonth } })
+              } catch (err) {
+                setImportMsg(err instanceof Error ? err.message : 'Impor gagal')
+              } finally {
+                setImporting(false)
+                e.target.value = ''
+              }
+            }}
+          />
+          {importMsg ? <p className="text-sm">{importMsg}</p> : null}
+        </div>
       ) : null}
       {!report ? (
         <p className="text-sm text-[var(--text-secondary)]">
