@@ -1,0 +1,5 @@
+tipe,nama,residence_id,email,role
+perumahan,Griya Indah,res-griya,,
+user,Budi Santoso,res-griya,budi@example.com,manager
+user,Ayu Lestari,res-griya,ayu@example.com,accountant
+user,Sari Wulandari,res-griya,sari@example.com,resident

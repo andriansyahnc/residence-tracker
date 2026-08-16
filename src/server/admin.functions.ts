@@ -68,6 +68,15 @@ export const setMembershipRole = createServerFn({ method: 'POST' })
     return getAdminStore().setMembershipRole(realUserId, data)
   })
 
+export const importSetupCsv = createServerFn({ method: 'POST' })
+  .validator((data: { csv: string }) => data)
+  .handler(async ({ data }) => {
+    const { readRealUserId } = await import('./auth.server')
+    const realUserId = await readRealUserId()
+    if (!realUserId) throw new Error('Unauthorized')
+    return getAdminStore().importSetupCsv(realUserId, data.csv)
+  })
+
 export const startImpersonation = createServerFn({ method: 'POST' })
   .validator((data: { targetUserId: string }) => data)
   .handler(async ({ data }) => {

@@ -41,6 +41,28 @@ describe('admin-store', () => {
     expect(target.userId).toBe('user-manager')
   })
 
+  it('sets up a residence and its people from one CSV', async () => {
+    const csv = [
+      'tipe,nama,residence_id,email,role',
+      'perumahan,Griya Indah,res-griya,,',
+      'user,Budi,res-griya,budi@example.com,manager',
+      'user,Ayu,res-griya,ayu@example.com,bendahara',
+    ].join('\n')
+
+    const result = await store.importSetupCsv('user-super', csv)
+
+    expect(result.imported).toBe(2)
+    // 'bendahara' is not one of the role values.
+    expect(result.errors).toHaveLength(1)
+
+    const overview = await store.listOverview('user-super')
+    expect(overview.residences.some((r) => r.id === 'res-griya')).toBe(true)
+    expect(
+      overview.users.find((u) => u.email === 'budi@example.com')?.memberships[0]
+        .role,
+    ).toBe('manager')
+  })
+
   it('creates a residence and a user in it', async () => {
     const residence = await store.createResidence('user-super', 'Bukit Indah')
     await store.createUser('user-super', {

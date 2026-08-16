@@ -17,6 +17,17 @@ export type PlatformRole = 'superadmin' | 'admin'
 /** Roles a superadmin is allowed to borrow. Plain residents are off limits. */
 const IMPERSONATABLE_RESIDENCE_ROLES = ['manager', 'accountant'] as const
 
+const ROLE_VALUES = ['resident', 'manager', 'accountant'] as const
+
+/** Columns of the setup import file, in order. Also the template's header. */
+export const SETUP_CSV_HEADER = [
+  'tipe',
+  'nama',
+  'residence_id',
+  'email',
+  'role',
+] as const
+
 function nowIso() {
   return new Date().toISOString()
 }
@@ -86,14 +97,23 @@ export function createAdminStore(db: AppDatabase) {
     },
 
     /** A new residence gets its own management group, so its reports stay its own. */
-    async createResidence(actorUserId: string, name: string) {
+    async createResidence(actorUserId: string, name: string, wantedId?: string) {
       await requireSuperadmin(actorUserId)
       const trimmed = name.trim()
       if (!trimmed) throw new AppError('VALIDATION', 'Nama wajib diisi')
 
       const createdAt = nowIso()
-      const residenceId = id('res')
+      const residenceId = wantedId?.trim() || id('res')
       const groupId = id('mg')
+
+      const [taken] = await db
+        .select()
+        .from(residences)
+        .where(eq(residences.id, residenceId))
+        .limit(1)
+      if (taken) {
+        throw new AppError('CONFLICT', `residence_id ${residenceId} sudah dipakai`)
+      }
 
       await db.insert(residences).values({ id: residenceId, name: trimmed, createdAt })
       await db
@@ -231,6 +251,63 @@ export function createAdminStore(db: AppDatabase) {
         endedAt: null,
       })
       return { userId: target.id, displayName: target.displayName }
+    },
+
+    /**
+     * Sets up perumahan and their people in one upload. `tipe` tells the rows
+     * apart. A `perumahan` row may name its own residence_id so the `user` rows
+     * below it can point at a residence created in the same file.
+     *
+     *   tipe,nama,residence_id,email,role
+     *   perumahan,Griya Indah,res-griya,,
+     *   user,Budi,res-griya,budi@mail.com,manager
+     */
+    async importSetupCsv(actorUserId: string, csv: string) {
+      await requireSuperadmin(actorUserId)
+
+      const lines = csv
+        .trim()
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean)
+      if (lines.length < 2) {
+        throw new AppError('VALIDATION', 'CSV butuh baris judul dan isi')
+      }
+      const header = SETUP_CSV_HEADER.join(',')
+      if (lines[0].split(',').map((h) => h.trim()).join(',') !== header) {
+        throw new AppError('VALIDATION', `Baris judul harus: ${header}`)
+      }
+
+      const errors: string[] = []
+      let imported = 0
+
+      for (let i = 1; i < lines.length; i++) {
+        const cells = SETUP_CSV_HEADER.map(
+          (_, col) => (lines[i].split(',')[col] ?? '').trim(),
+        )
+        const [tipe, nama, residenceId, email, role] = cells
+        try {
+          if (tipe === 'perumahan') {
+            await this.createResidence(actorUserId, nama, residenceId)
+          } else if (tipe === 'user') {
+            if (!ROLE_VALUES.includes(role as (typeof ROLE_VALUES)[number])) {
+              throw new AppError('VALIDATION', `role harus salah satu: ${ROLE_VALUES.join('/')}`)
+            }
+            await this.createUser(actorUserId, {
+              email,
+              displayName: nama,
+              residenceId,
+              role: role as (typeof ROLE_VALUES)[number],
+            })
+          } else {
+            throw new AppError('VALIDATION', 'tipe harus perumahan atau user')
+          }
+          imported++
+        } catch (e) {
+          errors.push(`baris ${i + 1}: ${e instanceof Error ? e.message : 'error'}`)
+        }
+      }
+      return { imported, errors }
     },
 
     /** Closes the open entry. Who returns to their own account is the caller's job. */

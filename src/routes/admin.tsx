@@ -7,6 +7,7 @@ import {
   createUser,
   getAdminContext,
   getAdminOverview,
+  importSetupCsv,
   setMembershipRole,
   startImpersonation,
 } from '../server/admin.functions'
@@ -87,7 +88,10 @@ function ResidenceList({
   run: (action: () => Promise<unknown>) => Promise<void>
 }) {
   const addResidence = useServerFn(createResidence)
+  const importCsv = useServerFn(importSetupCsv)
   const [name, setName] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState<string | null>(null)
 
   return (
     <div className="space-y-4">
@@ -122,6 +126,39 @@ function ResidenceList({
         >
           Tambah
         </PrimaryButton>
+      </div>
+
+      <div className="space-y-2 border-t pt-4">
+        <p className="text-sm font-medium">Impor perumahan + user (CSV)</p>
+        <a href="/template-perumahan.csv" download className="block text-sm">
+          Unduh template CSV
+        </a>
+        <input
+          type="file"
+          accept=".csv,text/csv"
+          className="block w-full text-sm"
+          disabled={importing}
+          onChange={async (e) => {
+            const file = e.target.files?.[0]
+            if (!file) return
+            setImporting(true)
+            setImportMsg(null)
+            try {
+              const result = await importCsv({ data: { csv: await file.text() } })
+              setImportMsg(
+                `${result.imported} baris masuk.` +
+                  (result.errors.length ? ` Gagal: ${result.errors.join('; ')}` : ''),
+              )
+              if (result.errors.length === 0) window.location.reload()
+            } catch (err) {
+              setImportMsg(err instanceof Error ? err.message : 'Impor gagal')
+            } finally {
+              setImporting(false)
+              e.target.value = ''
+            }
+          }}
+        />
+        {importMsg ? <p className="text-sm">{importMsg}</p> : null}
       </div>
     </div>
   )
