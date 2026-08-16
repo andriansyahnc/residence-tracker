@@ -17,8 +17,12 @@ export const Route = createFileRoute('/login')({
 })
 
 const DEMO_USERS = [
-  { email: 'resident@example.com', label: 'Sign in as resident (Alex)' },
-  { email: 'manager@example.com', label: 'Sign in as manager (Morgan)' },
+  { email: 'demo.warga@example.com', label: 'Masuk sebagai warga (Ibu Sari)' },
+  { email: 'demo.manager@example.com', label: 'Masuk sebagai pengurus (Pak Budi)' },
+  {
+    email: 'demo.bendahara@example.com',
+    label: 'Masuk sebagai bendahara (Pak Anton)',
+  },
 ]
 
 function LoginPage() {

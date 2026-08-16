@@ -1,5 +1,6 @@
-import { Link, createFileRoute, redirect } from '@tanstack/react-router'
+import { Link, createFileRoute, redirect, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
+import { useState } from 'react'
 import {
   AppShell,
   EmptyState,
@@ -9,6 +10,8 @@ import {
 } from '../../components/ui'
 import { IplNavTabs } from '../../components/ipl-nav'
 import { getAuthState, logout } from '../../server/auth.functions'
+import { resetDemo } from '../../server/demo.functions'
+import { DEMO_RESIDENCE_ID } from '../../domain/constants'
 import { listProblems } from '../../server/problems.functions'
 import type { ProblemStatus } from '../../domain/types'
 
@@ -43,9 +46,13 @@ export const Route = createFileRoute('/problems/')({
 function ProblemsPage() {
   const { problems, user } = Route.useLoaderData()
   const search = Route.useSearch()
+  const router = useRouter()
   const logoutFn = useServerFn(logout)
+  const resetDemoFn = useServerFn(resetDemo)
+  const [resetting, setResetting] = useState(false)
 
   const isManager = user.role === 'manager'
+  const isDemoManager = isManager && user.residenceId === DEMO_RESIDENCE_ID
 
   return (
     <AppShell
@@ -66,6 +73,30 @@ function ProblemsPage() {
       }
     >
       <IplNavTabs user={user} active="masalah" />
+      {isDemoManager ? (
+        <div className="mb-4 rounded-lg border border-[var(--border)] p-3">
+          <p className="mb-2 text-sm text-[var(--text-secondary)]">
+            Ini data demo. Tombol di bawah mengembalikan semua data demo ke
+            kondisi awal.
+          </p>
+          <button
+            type="button"
+            className="auralis-btn-ghost text-sm"
+            disabled={resetting}
+            onClick={async () => {
+              setResetting(true)
+              try {
+                await resetDemoFn()
+                await router.invalidate()
+              } finally {
+                setResetting(false)
+              }
+            }}
+          >
+            {resetting ? 'Mengembalikan…' : 'Reset data demo'}
+          </button>
+        </div>
+      ) : null}
       {isManager ? (
         <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
           {FILTER_STATUSES.map((status) => (

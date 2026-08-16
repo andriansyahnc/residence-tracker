@@ -1,5 +1,6 @@
 import { count, eq } from 'drizzle-orm'
 import type { AppDatabase } from './index'
+import { seedDemoOrg } from './demo-seed'
 import {
   iplRates,
   managementGroupResidences,
@@ -19,6 +20,7 @@ export async function seedDatabase(db: AppDatabase) {
   if (existing[0]?.count && existing[0].count > 0) {
     await ensureDemoUsers(db)
     await ensureIplBaseline(db)
+    await seedDemoOrg(db)
     return
   }
 
@@ -82,6 +84,7 @@ export async function seedDatabase(db: AppDatabase) {
   ])
 
   await ensureIplBaseline(db)
+  await seedDemoOrg(db)
 }
 
 async function ensureDemoUsers(db: AppDatabase) {
